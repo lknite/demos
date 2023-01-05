@@ -1,92 +1,11 @@
-# add all nodes to /etc/hosts, and copy /etc/hosts to all nodes
-cat >> /etc/hosts
-scp /etc/hosts root@<targetnode>:/etc/hosts
+[Goal]
 
-# Initialize control plane on the first master
-#export ENDPOINT="k-ceph:6443"
-#sudo --preserve-env kubeadm init --control-plane-endpoint="${ENDPOINT}" --upload-certs --pod-network-cidr=172.16.0.0/16
-
-# need to skip the phase w/ centos stream 9 & ha setup
-export ENDPOINT="k-ceph:6443"
-sudo --preserve-env kubeadm init --control-plane-endpoint="${ENDPOINT}" --upload-certs --pod-network-cidr=172.16.0.0/16 \
-  --skip-phases=addon/kube-proxy \
-  --skip-phases=addon/coredns
-
-# after you are able to init you'll still need to run the addon phase you skipped:
-echo ""
-echo "Sleeping for 40 seconds ..."
-sleep 40
-sudo --preserve-env kubeadm init phase addon all \
-  --control-plane-endpoint="${ENDPOINT}" \
-  --pod-network-cidr=172.16.0.0/16
-
-# Configure NetworkManager to allow calico to do its thing, ** this is required **
-cat <<EOF | sudo tee /etc/NetworkManager/conf.d/calico.conf
-[keyfile]
-unmanaged-devices=interface-name:cali*;interface-name:tunl*;interface-name:vxlan.calico;interface-name:vxlan-v6.calico;interface-name:wireguard.cali;interface-name:wg-v6.cali
-EOF
-
-# Restart NetworkManager to load the updated config
-systemctl restart NetworkManager
+Deploy kubernetes:
+- method: kubeadm
+-     os: centos-9-stream
+-   type: single node
 
 
-# Use the commands outputted from the 'kubeadm init' to join the other control plane masters and worker nodes
-# ^\../^
-
-# *** Log off cluster, and access from regular client
-# 1. copy admin.conf to ~/.kube/available/<cluster>.config and run k-merge so you can run commands from \\wb
-# 2. modify the admin.conf 's/kubernetes/<cluster>/g'
-# 3. k-merge-configs
-
-# Switch to context of new cluster
-k config use-context <cluster>
-
-# Install Calico using helm
-helm repo add projectcalico https://docs.projectcalico.org/charts
-helm install calico projectcalico/tigera-operator --version v3.24.5 --namespace tigera-operator --create-namespace
-#helm install calico projectcalico/tigera-operator --version v3.24.2 --namespace tigera-operator --create-namespace
-#helm install calico projectcalico/tigera-operator --version v3.24.1 --namespace tigera-operator --create-namespace
-#helm install calico projectcalico/tigera-operator --version v3.23.3 --namespace tigera-operator --create-namespace
-
-# Install & configure metallb
-helm repo add metallb https://metallb.github.io/metallb
-mkdir ~/tmp
-cat <<EOF | tee ~/tmp/metallb-ipaddresspool.yaml
-apiVersion: metallb.io/v1beta1
-kind: IPAddressPool
-metadata:
-  name: first-pool
-  namespace: metallb-system
-spec:
-  addresses:
-  - 10.0.1.40-10.0.1.254
-EOF
-cat <<EOF | tee ~/tmp/metallb-l2advertisement.yaml
-apiVersion: metallb.io/v1beta1
-kind: L2Advertisement
-metadata:
-  name: l2advertisement
-  namespace: metallb-system
-EOF
-helm install --create-namespace --namespace metallb-system metallb metallb/metallb
-sleep 40
-kubectl apply -f ~/tmp/metallb-ipaddresspool.yaml
-kubectl apply -f ~/tmp/metallb-l2advertisement.yaml
-
-# Install smb driver 
-helm repo add csi-driver-smb https://raw.githubusercontent.com/kubernetes-csi/csi-driver-smb/master/charts
-helm install csi-driver-smb csi-driver-smb/csi-driver-smb --namespace kube-system --version v1.8.0
-
-# Deploy StorageClass 'freenas-iscsi-csi', via democratic iscsi driver
+[Detail]
 
 
-# Deploy StorageClass local-storage
-cat <<EOF | tee ~/tmp/storageclass-local-storage.yaml
-apiVersion: storage.k8s.io/v1
-kind: StorageClass
-metadata:
-  name: local-storage
-provisioner: kubernetes.io/no-provisioner
-#volumeBindingMode: WaitForFirstConsumer
-EOF
-kubectl apply -f ~/tmp/storageclass-local-storage.yaml
