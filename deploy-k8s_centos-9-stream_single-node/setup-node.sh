@@ -122,4 +122,9 @@ sudo systemctl start xe-linux-distribution
 
 # Seems to be required lately, to get around errors:
 # - Failed to allocate directory watch: Too many open files
-sysctl fs.inotify.max_user_instances=512
+cat <<EOF | sudo tee -a /etc/sysctl.conf
+fs.inotify.max_user_instances=512
+EOF
+
+# reload sysctl
+sudo sysctl -p
