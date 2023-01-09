@@ -1,0 +1,1 @@
+../deploy-k8s_centos-9-stream_single-node/setup-cluster.txt
