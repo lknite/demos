@@ -11,7 +11,7 @@ pihole:
     passwordKey: "password"
 
   persistentVolumeClaim:
-    enabled: true
+    enabled: false
 
   serviceDhcp:
     enabled: false
