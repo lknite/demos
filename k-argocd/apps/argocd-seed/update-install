@@ -1,0 +1,20 @@
+#!/bin/bash
+
+NAME=argocd-seed
+NS=$NAME
+REPO=https://argoproj.github.io/argo-helm
+REPO_ALIAS=argo-cd
+CHART=argo-cd
+
+# prep
+helm repo add $REPO_ALIAS $REPO
+helm repo update
+touch values.yaml
+
+# install/upgrade
+helm upgrade \
+        --install \
+        --namespace $NS \
+        --create-namespace \
+        -f ./values.yaml \
+        $NAME $REPO_ALIAS/$CHART

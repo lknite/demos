@@ -1,0 +1,26 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: argocd
+  namespace: argocd-seed
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/lknite/demos.git
+    targetRevision: HEAD
+    path: k-argocd/apps/argocd/base
+
+    helm:
+      releaseName: argocd
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+
+  syncPolicy:
+    syncOptions:
+    - CreateNamespace=true
+
+    automated:
+      selfHeal: true
+      prune: true

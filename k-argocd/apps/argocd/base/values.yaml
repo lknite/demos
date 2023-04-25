@@ -1,0 +1,106 @@
+argo-cd:
+
+  server:
+    extraArgs:
+    - --insecure
+
+    ingress:
+      enabled: true
+      ingressClassName: nginx
+      hosts:
+      - argocd.k.home.net
+      tls:
+      - secretName: argocd.k.home.net-tls
+        hosts:
+        - argocd.k.home.net
+      annotations:
+        cert-manager.io/issuer: "cluster-adcs-issuer"                   #use specific name of issuer
+        cert-manager.io/issuer-kind: "ClusterAdcsIssuer"                #or ClusterAdcsIssuer
+        cert-manager.io/issuer-group: "adcs.certmanager.csf.nokia.com"
+        nginx.ingress.kubernetes.io/rewrite-target: /
+        nginx.ingress.kubernetes.io/proxy-body-size: 1000m
+
+    volumeMounts:
+    - mountPath: "/etc/ssl/certs"
+      name: ca-bundle
+    volumes:
+    - name: ca-bundle
+      configMap:
+        name: ca-bundle
+
+    config:
+      url: "https://argocd.k.home.net"
+      oidc.config: |
+        name: Keycloak
+        issuer: https://keycloak.k.home.net/realms/home.net
+        clientID: default
+        #clientSecret: $argocd-oidc:oidc.keycloak.clientSecret
+        requestedIDTokenClaims:
+          groups:
+            essential: true
+        requestedScopes:
+        - openid
+        - profile
+        - email
+        - offline_access
+
+    rbacConfig:
+      policy.csv: |
+        # Grant all members of the group 'my-org:team-alpha; the ability to sync apps in 'my-project'
+        #p, my-org:team-alpha, applications, sync, my-project/*, allow
+        # Grant all members of 'my-org:team-beta' admins
+        g, k-app-argocd-admin, role:admin
+
+  controller:
+
+    volumeMounts:
+    - mountPath: "/etc/ssl/certs"
+      name: ca-bundle
+    volumes:
+    - name: ca-bundle
+      configMap:
+        name: ca-bundle
+
+  dex:
+
+    enabled: false
+
+  redis:
+
+    volumeMounts:
+    - mountPath: "/etc/ssl/certs"
+      name: ca-bundle
+    volumes:
+    - name: ca-bundle
+      configMap:
+        name: ca-bundle
+
+  repoServer:
+
+    volumeMounts:
+    - mountPath: "/etc/ssl/certs"
+      name: ca-bundle
+    volumes:
+    - name: ca-bundle
+      configMap:
+        name: ca-bundle
+
+  applicationSet:
+
+    extraVolumeMounts:
+    - mountPath: "/etc/ssl/certs"
+      name: ca-bundle
+    extraVolumes:
+    - name: ca-bundle
+      configMap:
+        name: ca-bundle
+
+  notifications:
+
+    extraVolumeMounts:
+    - mountPath: "/etc/ssl/certs"
+      name: ca-bundle
+    extraVolumes:
+    - name: ca-bundle
+      configMap:
+        name: ca-bundle
