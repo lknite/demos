@@ -1,0 +1,46 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: metrics-server
+  namespace: argocd
+
+spec:
+  generators:
+  - clusters:
+      selector:
+        matchLabels:
+          argocd.argoproj.io/secret-type: cluster
+          addons-metrics-server: "true"
+
+  template: 
+    # This is a template Argo CD Application, but with support for parameter substitution.
+    metadata:
+      name: '{{name}}-metrics-server'
+    spec:
+      project: "default"
+      source:
+        repoURL: https://charts.bitnami.com/bitnami
+        chart: metrics-server
+        targetRevision: 6.2.5
+
+        helm:
+          releaseName: "metrics-server"
+          parameters:
+          - name: extraArgs[0]
+            value: "--kubelet-insecure-tls=true"
+          - name: extraArgs[1]
+            value: "--kubelet-preferred-address-types=InternalIP"
+          - name: apiService.create
+            value: "true"
+
+      destination:
+        server: '{{server}}'
+        namespace: metrics-server
+
+      syncPolicy:
+        syncOptions:
+        - CreateNamespace=true
+
+        automated:
+          selfHeal: true
+          prune: true
