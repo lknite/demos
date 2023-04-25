@@ -1,8 +1,5 @@
 [Goal]
 
-Deploy kubernetes:
-- method: kubeadm
--     os: centos-9-stream
--   type: multi-node
-          1 - control plane
-          3 - worker nodes
+Improve previous demo by adding:
+- load balancer
+- 2 additional control plane nodes
