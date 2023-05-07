@@ -1,6 +1,9 @@
 argo-cd:
 
   server:
+    service:
+      type: LoadBalancer
+
     extraArgs:
     - --insecure
 
