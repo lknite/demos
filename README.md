@@ -8,4 +8,5 @@ Files used in demos
 [Way of the developer] (https://youtu.be/cJirchPxfxM)
 [Kubernetes - getting up to speed - intro] (https://youtu.be/pKJ56uCaUWM)
 [Kubernetes - getting up to speed - skill tree] (https://youtu.be/SHgyM45nMdw)
+[ArgoCD - Getting Started] (https://youtu.be/0kLc5DzxVxk)
 ```
